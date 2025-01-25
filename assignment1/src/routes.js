@@ -14,6 +14,7 @@ router.get("/papers", async (req, res, next) => {
     };
 
     // Your implementation here
+
   } catch (error) {
     next(error);
   }
@@ -23,6 +24,7 @@ router.get("/papers", async (req, res, next) => {
 router.get("/papers/:id", async (req, res, next) => {
   try {
     // Your implementation here
+
   } catch (error) {
     next(error);
   }
@@ -39,6 +41,7 @@ router.post("/papers", async (req, res, next) => {
     }
 
     // Your implementation here
+
   } catch (error) {
     next(error);
   }
@@ -55,6 +58,7 @@ router.put("/papers/:id", async (req, res, next) => {
     }
 
     // Your implementation here
+
   } catch (error) {
     next(error);
   }
@@ -64,6 +68,7 @@ router.put("/papers/:id", async (req, res, next) => {
 router.delete("/papers/:id", async (req, res, next) => {
   try {
     // Your implementation here
+    
   } catch (error) {
     next(error);
   }
