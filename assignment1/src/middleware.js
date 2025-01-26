@@ -8,15 +8,6 @@ const requestLogger = (req, res, next) => {
 const validatePaper = (paper) => {
   // TODO: Implement paper validation  
   const errors = [];
-  const { year, limit, offset, published_in } = req.query;
-
-  // Validate year 
-  if (year) {
-    const yearInt = parseInt(year, 10);
-    if (isNaN(yearInt) || yearInt <= 1900) {
-      errors.push("Valid year after 1900 is required");
-    }
-  }
 
   // Validate title
   if (!paper.title || typeof paper.title !== "string" || paper.title.trim() === "") {
@@ -29,23 +20,17 @@ const validatePaper = (paper) => {
   }
 
   // Validate published_in
-  if (!published_in || typeof paper.published_in !== "string" || paper.published_in.trim() === "") {
+  if (!paper.published_in || typeof paper.published_in !== "string" || paper.published_in.trim() === "") {
     errors.push("Published venue is required");
   }
 
-  // Validate limit
-  if (limit) {
-    const limitInt = parseInt(limit, 10);
-    if (isNaN(limitInt) || limitInt <= 0 || limitInt > 100) {
-      errors.push("Limit must be a positive integer no greater than 100.");
-    }
-  }
-
-  // Validate offset
-  if (offset) {
-    const offsetInt = parseInt(offset, 10);
-    if (isNaN(offsetInt) || offsetInt < 0) {
-      errors.push("Offset must be a non-negative integer.");
+  // Validate year 
+  if (paper.year == undefined) {
+    errors.push("Published year is required");
+  } else {
+    const yearInt = parseInt(paper.year, 10);
+    if (isNaN(yearInt) || yearInt <= 1900) {
+      errors.push("Valid year after 1900 is required");
     }
   }
 

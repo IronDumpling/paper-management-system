@@ -3,10 +3,8 @@ const router = express.Router();
 const db = require("./database");
 const { validatePaper, requestLogger, errorHandler, validateId } = require("./middleware");
 
-router.use(requestLogger);
-
 // GET /api/papers
-router.get("/papers", validateFilters, async (req, res, next) => {
+router.get("/papers", async (req, res, next) => {
   try {
     const filters = {
       year: req.query.year ? parseInt(req.query.year) : null,
