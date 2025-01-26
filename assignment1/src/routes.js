@@ -37,9 +37,10 @@ router.post("/papers", async (req, res, next) => {
   try {
     const errors = validatePaper(req.body);
     if (errors.length > 0) {
-      return res
-        .status(400)
-        .json({ error: "Validation Error", messages: errors });
+      return res.status(400).json({ 
+        error: "Validation Error", 
+        messages: errors 
+      });
     }
 
     // Your implementation here
