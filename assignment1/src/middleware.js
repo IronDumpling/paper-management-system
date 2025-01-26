@@ -58,6 +58,14 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // Handle invalid ID format
+  if (err.type === "Invalid ID Format") {
+    return res.status(400).json({
+      error: "Validation Error",
+      message: err.message 
+    });
+  }
+
   // Not Found Error (404 Not Found)
   if (err.type === "Not Found") {
     return res.status(404).json({
@@ -82,9 +90,9 @@ const validateId = (req, res, next) => {
   // Check if the ID is a positive integer
   const idInt = parseInt(id, 10);
   if (isNaN(idInt) || idInt <= 0) {
-    const validationError = new Error("Invalid ID format");
-    validationError.type = "Validation Error";
-    next(validationError);
+    const error = new Error("Invalid ID format");
+    error.type = "Invalid ID Format"; 
+    next(error);
     return;
   }
 

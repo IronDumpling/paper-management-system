@@ -14,6 +14,21 @@ router.get("/papers", async (req, res, next) => {
     };
 
     // Your implementation here
+    
+    // Validate limit parameter
+    if (isNaN(filters.limit) || filters.limit <= 0 || filters.limit > 100) {
+      const error = new Error("Invalid limit parameter");
+      error.type = "Invalid Query Parameter";
+      throw error;
+    }
+
+    // Validate offset parameter
+    if (isNaN(filters.offset) || filters.offset < 0) {
+      const error = new Error("Invalid offset parameter");
+      error.type = "Invalid Query Parameter";
+      throw error;
+    }
+    
     const papers = await db.getAllPapers(filters);
     res.status(200).json(papers);
   } catch (error) {
