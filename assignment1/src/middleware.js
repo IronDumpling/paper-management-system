@@ -50,18 +50,18 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // Not Found Error (404 Not Found)
-  if (err.type === "Not Found") {
-    return res.status(404).json({
-      error: "Paper not found",
-    });
-  }
-
   // Invalid Query Parameter (400 Bad Request)
   if (err.type === "Invalid Query Parameter") {
     return res.status(400).json({
       error: "Validation Error",
       message: "Invalid query parameter format",
+    });
+  }
+
+  // Not Found Error (404 Not Found)
+  if (err.type === "Not Found") {
+    return res.status(404).json({
+      error: "Paper not found",
     });
   }
 
@@ -82,13 +82,10 @@ const validateId = (req, res, next) => {
   // Check if the ID is a positive integer
   const idInt = parseInt(id, 10);
   if (isNaN(idInt) || idInt <= 0) {
-    // return res.status(400).json({
-    //   error: "Validation Error",
-    //   message: "Invalid ID format",
-    // });
     const validationError = new Error("Invalid ID format");
     validationError.type = "Validation Error";
-    throw validationError;
+    next(validationError);
+    return;
   }
 
   req.id = idInt;

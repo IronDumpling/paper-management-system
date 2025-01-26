@@ -26,11 +26,6 @@ router.get("/papers/:id", validateId, async (req, res, next) => {
   try {
     const id = req.id;
     const paper = await db.getPaperById(id);
-    if (!paper) {
-      const notFoundError = new Error("Paper not found");
-      notFoundError.type = "Not Found";
-      throw notFoundError;
-    }
     res.status(200).json(paper);
   } catch (error) {
     next(error);
@@ -56,22 +51,18 @@ router.post("/papers", async (req, res, next) => {
 });
 
 // PUT /api/papers/:id
-router.put("/papers/:id", async (req, res, next) => {
+router.put("/papers/:id", validateId, async (req, res, next) => {
   try {
     const errors = validatePaper(req.body);
     if (errors.length > 0) {
-      return res
-        .status(400)
-        .json({ error: "Validation Error", messages: errors });
+      return res.status(400).json({ 
+        error: "Validation Error", 
+        messages: errors 
+      });
     }
 
     // Your implementation here
-    const updatedPaper = await db.updatePaper(id, req.body);
-
-    if (!updatedPaper) {
-      return res.status(404).json({ error: "Paper not found" });
-    }
-
+    const updatedPaper = await db.updatePaper(req.id, req.body);
     res.status(200).json(updatedPaper);
 
   } catch (error) {
