@@ -25,11 +25,10 @@ const validatePaper = (paper) => {
   }
 
   // Validate year 
-  if (paper.year == undefined) {
+  if (paper.year === undefined || paper.year === null) {
     errors.push("Published year is required");
   } else {
-    const yearInt = parseInt(paper.year, 10);
-    if (isNaN(yearInt) || yearInt <= 1900) {
+    if (!(Number.isInteger(paper.year)) || paper.year <= 1900) {
       errors.push("Valid year after 1900 is required");
     }
   }
@@ -89,7 +88,7 @@ const validateId = (req, res, next) => {
 
   // Check if the ID is a positive integer
   const idInt = parseInt(id, 10);
-  if (isNaN(idInt) || idInt <= 0) {
+  if (!/^\d+$/.test(id) || isNaN(idInt) || idInt <= 0) {
     const error = new Error("Invalid ID format");
     error.type = "Invalid ID Format"; 
     next(error);

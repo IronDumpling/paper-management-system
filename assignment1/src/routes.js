@@ -6,6 +6,20 @@ const { validatePaper, requestLogger, errorHandler, validateId } = require("./mi
 // GET /api/papers
 router.get("/papers", async (req, res, next) => {
   try {
+    // Validate limit parameter
+    if (req.query.limit && !/^\d+$/.test(req.query.limit)) {
+      const error = new Error("Invalid limit parameter");
+      error.type = "Invalid Query Parameter";
+      throw error;
+    }
+
+    // Validate offset parameter
+    if (req.query.offset && !/^\d+$/.test(req.query.offset)) {
+      const error = new Error("Invalid offset parameter");
+      error.type = "Invalid Query Parameter";
+      throw error;
+    }
+    
     const filters = {
       year: req.query.year ? parseInt(req.query.year) : null,
       published_in: req.query.published_in,
