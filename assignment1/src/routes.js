@@ -19,6 +19,27 @@ router.get("/papers", async (req, res, next) => {
       error.type = "Invalid Query Parameter";
       throw error;
     }
+
+    // Validate year parameter
+    if (req.query.year !== undefined && req.query.year !== "") {
+      const year = Number(req.query.year);
+
+      // Check if year is a valid integer and greater than 1900
+      if (!Number.isInteger(year) || year <= 1900) {
+        const error = new Error("Invalid year parameter");
+        error.type = "Invalid Query Parameter";
+        throw error;
+      }
+    }
+
+    if (req.query.published_in !== undefined && req.query.published_in !== "") {
+      const publishedInTrimmed = req.query.published_in.trim();
+      if (publishedInTrimmed === "" || !isNaN(Number(publishedInTrimmed))) {
+        const error = new Error("Invalid published_in parameter");
+        error.type = "Invalid Query Parameter";
+        throw error;
+      }
+    }
     
     const filters = {
       year: req.query.year ? parseInt(req.query.year) : null,
