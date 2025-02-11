@@ -931,8 +931,3 @@ describe("Paper Management API Tests", () => {
     });
   });
 });
-
-// javascript undefined null -> empty field
-// string undefined null -> string
-// GET /api/papers/:id -> error all 400
-// float DELET &  & GET /api/papers/:id
