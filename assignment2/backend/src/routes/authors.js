@@ -9,23 +9,30 @@ router.get(
   middleware.validateAuthorQueryParams,
   async (req, res, next) => {
     try {
-      // TODO: Implement GET /api/authors
-      //
-      // 1. Extract query parameters:
-      //    - name (optional)
-      //    - affiliation (optional)
-      //    - limit (optional, default: 10)
-      //    - offset (optional, default: 0)
-      //
-      // 2. Call db.getAllAuthors with filters
-      //
-      // 3. Send JSON response with status 200:
-      //    res.json({
-      //      authors,  // Array of authors with their papers
-      //      total,    // Total number of authors matching filters
-      //      limit,    // Current page size
-      //      offset    // Current page offset
-      //    });
+      const { name, affiliation } = req.query;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = parseInt(req.query.offset) || 0;
+
+      // Build filter conditions
+      const where = {};
+      if (name) where.name = { contains: name, mode: "insensitive" };
+      if (affiliation) where.affiliation = { contains: affiliation, mode: "insensitive" };
+
+      const [authors, total] = await Promise.all([
+        db.getAllAuthors({
+          where,
+          limit,
+          offset,
+        }),
+        db.countAuthors(where),
+      ]);
+
+      res.json({
+        authors,
+        total,
+        limit,
+        offset,
+      });
     } catch (error) {
       next(error);
     }
@@ -35,16 +42,13 @@ router.get(
 // GET /api/authors/:id
 router.get("/:id", middleware.validateResourceId, async (req, res, next) => {
   try {
-    // TODO: Implement GET /api/authors/:id
-    //
-    // 1. Get author ID from req.params
-    //
-    // 2. Call db.getAuthorById
-    //
-    // 3. If author not found, return 404
-    //
-    // 4. Send JSON response with status 200:
-    //    res.json(author);
+    const author = await db.getAuthorById(req.resourceId);
+    
+    if (!author) {
+      return res.status(404).json({ error: "Author not found" });
+    }
+
+    res.json(author);
   } catch (error) {
     next(error);
   }
@@ -53,16 +57,16 @@ router.get("/:id", middleware.validateResourceId, async (req, res, next) => {
 // POST /api/authors
 router.post("/", async (req, res, next) => {
   try {
-    // TODO: Implement POST /api/authors
-    //
-    // 1. Validate request body using middleware.validateAuthorInput
-    //
-    // 2. If validation fails, return 400 with error messages
-    //
-    // 3. Call db.createAuthor
-    //
-    // 4. Send JSON response with status 201:
-    //    res.status(201).json(author);
+    const errors = middleware.validateAuthorInput(req.body);
+    if (errors.length > 0) {
+      return res.status(400).json({
+        error: "Validation Error",
+        messages: errors,
+      });
+    }
+
+    const author = await db.createAuthor(req.body);
+    res.status(201).json(author);
   } catch (error) {
     next(error);
   }
@@ -71,20 +75,21 @@ router.post("/", async (req, res, next) => {
 // PUT /api/authors/:id
 router.put("/:id", middleware.validateResourceId, async (req, res, next) => {
   try {
-    // TODO: Implement PUT /api/authors/:id
-    //
-    // 1. Get author ID from req.params
-    //
-    // 2. Validate request body using middleware.validateAuthorInput
-    //
-    // 3. If validation fails, return 400 with error messages
-    //
-    // 4. Call db.updateAuthor
-    //
-    // 5. If author not found, return 404
-    //
-    // 6. Send JSON response with status 200:
-    //    res.json(author);
+    const errors = middleware.validateAuthorInput(req.body);
+    if (errors.length > 0) {
+      return res.status(400).json({
+        error: "Validation Error",
+        messages: errors,
+      });
+    }
+
+    const author = await db.updateAuthor(req.resourceId, req.body);
+    
+    if (!author) {
+      return res.status(404).json({ error: "Author not found" });
+    }
+
+    res.json(author);
   } catch (error) {
     next(error);
   }
@@ -93,22 +98,23 @@ router.put("/:id", middleware.validateResourceId, async (req, res, next) => {
 // DELETE /api/authors/:id
 router.delete("/:id", middleware.validateResourceId, async (req, res, next) => {
   try {
-    // TODO: Implement DELETE /api/authors/:id
-    //
-    // 1. Get author ID from req.params
-    //
-    // 2. Call db.deleteAuthor
-    //
-    // 3. If author not found, return 404
-    //
-    // 4. If author is the sole author of any papers, return 400:
-    //    {
-    //      "error": "Constraint Error",
-    //      "message": "Cannot delete author: they are the only author of one or more papers"
-    //    }
-    //
-    // 5. Send no content response with status 204:
-    //    res.status(204).end();
+    const papers = await db.getAuthorPapers(req.resourceId);
+    const soleAuthorPapers = papers.filter(p => p.authors.length === 1);
+
+    if (soleAuthorPapers.length > 0) {
+      return res.status(400).json({
+        error: "Constraint Error",
+        message: "Cannot delete author: they are the only author of one or more papers",
+      });
+    }
+
+    const deleted = await db.deleteAuthor(req.resourceId);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: "Author not found" });
+    }
+
+    res.status(204).end();
   } catch (error) {
     next(error);
   }

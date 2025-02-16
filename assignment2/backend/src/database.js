@@ -5,27 +5,26 @@ const prisma = new PrismaClient();
 const dbOperations = {
   createPaper: async (paperData) => {
     try {
-      // TODO: Implement paper creation
-      //
-      // paperData includes:
-      // - title: string
-      // - publishedIn: string
-      // - year: number
-      // - authors: array of author objects
-      //   each author has:
-      //   - name: string
-      //   - email: string (optional)
-      //   - affiliation: string (optional)
-      //
-      // Steps:
-      // 1. For each author in paperData.authors:
-      //    - First try to find an existing author with matching name, email, and affiliation
-      //    - If not found, create a new author
-      // 2. Create the paper and connect it with the authors
-      // 3. Make sure to include authors in the response
-      //
-      // Hint: Use prisma.author.findFirst() to find existing authors
-      // and prisma.paper.create() with { connect: [...] } to connect authors
+      return await prisma.paper.create({
+        data: {
+          title: paperData.title,
+          publishedIn: paperData.publishedIn,
+          year: paperData.year,
+          authors: {
+            connectOrCreate: paperData.authors.map(author => ({
+              where: {
+                name_email_affiliation: {
+                  name: author.name,
+                  email: author.email || null,
+                  affiliation: author.affiliation || null
+                }
+              },
+              create: author
+            }))
+          }
+        },
+        include: { authors: true }
+      });
     } catch (error) {
       throw error;
     }
@@ -33,18 +32,48 @@ const dbOperations = {
 
   getAllPapers: async (filters = {}) => {
     try {
-      // TODO: Implement getting all papers with filters
-      //
-      // filters can include:
-      // - year: number
-      // - publishedIn: string (partial match)
-      // - author: string (partial match)
-      // - limit: number (default: 10)
-      // - offset: number (default: 0)
-      //
-      // Use await prisma.paper.findMany()
-      // Include authors in the response
-      // Return { papers, total, limit, offset }
+      const where = {};
+      
+      // Year filter
+      if (filters.year) where.year = filters.year;
+      
+      // PublishedIn partial match
+      if (filters.publishedIn) {
+        where.publishedIn = { 
+          contains: filters.publishedIn,
+          mode: 'insensitive'
+        };
+      }
+      
+      // Author partial matches (AND logic)
+      if (filters.authors && filters.authors.length > 0) {
+        where.authors = {
+          every: {
+            name: {
+              contains: filters.authors,
+              mode: 'insensitive'
+            }
+          }
+        };
+      }
+
+      const [papers, total] = await Promise.all([
+        prisma.paper.findMany({
+          where,
+          take: filters.limit,
+          skip: filters.offset,
+          include: { authors: true },
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.paper.count({ where })
+      ]);
+
+      return { 
+        papers, 
+        total,
+        limit: filters.limit,
+        offset: filters.offset
+      };
     } catch (error) {
       throw error;
     }
@@ -52,11 +81,10 @@ const dbOperations = {
 
   getPaperById: async (id) => {
     try {
-      // TODO: Implement getting paper by ID
-      //
-      // Use await prisma.paper.findUnique()
-      // Include authors in the response
-      // Return null if not found
+      return await prisma.paper.findUnique({
+        where: { id },
+        include: { authors: true }
+      });
     } catch (error) {
       throw error;
     }
@@ -64,41 +92,49 @@ const dbOperations = {
 
   updatePaper: async (id, paperData) => {
     try {
-      // TODO: Implement paper update
-      //
-      // paperData includes:
-      // - title: string
-      // - publishedIn: string
-      // - year: number
-      // - authors: array of author objects
-      //   each author has:
-      //   - name: string
-      //   - email: string (optional)
-      //   - affiliation: string (optional)
-      //
-      // Steps:
-      // 1. For each author in paperData.authors:
-      //    - First try to find an existing author with matching name, email, and affiliation
-      //    - If not found, create a new author
-      // 2. Update the paper with new field values
-      // 3. Replace all author relationships with the new set of authors
-      // 4. Make sure to include authors in the response
-      //
-      // Hint: Use prisma.author.findFirst() to find existing authors
-      // and prisma.paper.update() with authors: { set: [], connect: [...] }
-      // to replace author relationships
+      return await prisma.$transaction(async (tx) => {
+        // Clear existing authors
+        await tx.paper.update({
+          where: { id },
+          data: { authors: { set: [] } }
+        });
+
+        // Reconnect with new/existing authors
+        return tx.paper.update({
+          where: { id },
+          data: {
+            title: paperData.title,
+            publishedIn: paperData.publishedIn,
+            year: paperData.year,
+            authors: {
+              connectOrCreate: paperData.authors.map(author => ({
+                where: {
+                  name_email_affiliation: {
+                    name: author.name,
+                    email: author.email || null,
+                    affiliation: author.affiliation || null
+                  }
+                },
+                create: author
+              }))
+            }
+          },
+          include: { authors: true }
+        });
+      });
     } catch (error) {
+      if (error.code === 'P2025') return null; // Not found
       throw error;
     }
   },
 
   deletePaper: async (id) => {
     try {
-      // TODO: Implement paper deletion
-      //
-      // Use await prisma.paper.delete()
-      // Return nothing (undefined)
+      return await prisma.paper.delete({
+        where: { id }
+      });
     } catch (error) {
+      if (error.code === 'P2025') return null; // Not found
       throw error;
     }
   },
@@ -106,33 +142,50 @@ const dbOperations = {
   // Author Operations
   createAuthor: async (authorData) => {
     try {
-      // TODO: Implement author creation
-      //
-      // authorData includes:
-      // - name: string
-      // - email: string (optional)
-      // - affiliation: string (optional)
-      //
-      // Use await prisma.author.create()
-      // Return the created author
+      return await prisma.author.create({
+        data: {
+          name: authorData.name,
+          email: authorData.email,
+          affiliation: authorData.affiliation
+        },
+        include: { 
+          papers: true // Include empty papers array in response
+        }
+      });
     } catch (error) {
+      // Handle unique constraint violations if needed
+      if (error.code === 'P2002') {
+        const constraintError = new Error('Author already exists');
+        constraintError.code = 'CONFLICT';
+        throw constraintError;
+      }
       throw error;
     }
   },
 
   getAllAuthors: async (filters = {}) => {
     try {
-      // TODO: Implement getting all authors with filters
-      //
-      // filters can include:
-      // - name: string (partial match)
-      // - affiliation: string (partial match)
-      // - limit: number (default: 10)
-      // - offset: number (default: 0)
-      //
-      // Use await prisma.author.findMany()
-      // Include papers in the response
-      // Return { authors, total, limit, offset }
+      const { name, affiliation, limit = 10, offset = 0 } = filters;
+      const where = {};
+      
+      if (name) {
+        where.name = { contains: name, mode: 'insensitive' };
+      }
+      if (affiliation) {
+        where.affiliation = { contains: affiliation, mode: 'insensitive' };
+      }
+
+      const [authors, total] = await Promise.all([
+        prisma.author.findMany({
+          where,
+          take: limit,
+          skip: offset,
+          include: { papers: true },
+        }),
+        prisma.author.count({ where }),
+      ]);
+
+      return { authors, total, limit, offset };
     } catch (error) {
       throw error;
     }
@@ -140,11 +193,10 @@ const dbOperations = {
 
   getAuthorById: async (id) => {
     try {
-      // TODO: Implement getting author by ID
-      //
-      // Use await prisma.author.findUnique()
-      // Include papers in the response
-      // Return null if not found
+      return await prisma.author.findUnique({
+        where: { id },
+        include: { papers: true },
+      });
     } catch (error) {
       throw error;
     }
@@ -152,24 +204,56 @@ const dbOperations = {
 
   updateAuthor: async (id, authorData) => {
     try {
-      // TODO: Implement author update
-      //
-      // Use await prisma.author.update()
-      // Return updated author with papers
+      return await prisma.author.update({
+        where: { id },
+        data: {
+          name: authorData.name,
+          email: authorData.email,
+          affiliation: authorData.affiliation,
+        },
+        include: { papers: true },
+      });
     } catch (error) {
+      if (error.code === 'P2025') {
+        return null; // Not found
+      }
       throw error;
     }
   },
 
   deleteAuthor: async (id) => {
     try {
-      // TODO: Implement author deletion
-      //
-      // First check if author is sole author of any papers
-      // If yes, throw error
-      // If no, delete author
-      // Use await prisma.author.delete()
+      // Check if author exists
+      const author = await prisma.author.findUnique({ where: { id } });
+      if (!author) {
+        return { error: "NOT_FOUND" };
+      }
+
+      // Check constraint: author is sole author of any papers
+      const papers = await prisma.paper.findMany({
+        where: { authors: { some: { id } } },
+        include: { authors: true },
+      });
+
+      const soleAuthorPapers = papers.filter(paper => 
+        paper.authors.length === 1 && 
+        paper.authors.some(a => a.id === id)
+      );
+
+      if (soleAuthorPapers.length > 0) {
+        return { error: "CONSTRAINT" };
+      }
+
+      // Delete author and their relationships
+      await prisma.author.delete({
+        where: { id },
+      });
+
+      return { success: true };
     } catch (error) {
+      if (error.code === 'P2025') {
+        return { error: "NOT_FOUND" };
+      }
       throw error;
     }
   },
