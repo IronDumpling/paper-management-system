@@ -5,27 +5,46 @@ const prisma = new PrismaClient();
 const dbOperations = {
   createPaper: async (paperData) => {
     try {
+      const processedAuthors = await Promise.all(
+        paperData.authors.map(async (author) => {
+          // 1. Find existing authors with exact matches
+          const existingAuthors = await prisma.author.findMany({
+            where: {
+              name: author.name,
+              email: author.email === undefined ? null : author.email,
+              affiliation: author.affiliation === undefined ? null : author.affiliation
+            },
+            orderBy: { id: "asc" } 
+          });
+
+          // 2. Return the first match or new author data
+          return existingAuthors.length > 0 ? existingAuthors[0] : author;
+        })
+      );
+
+      // 3. Create paper with explicit connections
       return await prisma.paper.create({
         data: {
           title: paperData.title,
           publishedIn: paperData.publishedIn,
           year: paperData.year,
           authors: {
-            connectOrCreate: paperData.authors.map(author => ({
-              where: {
-                name_email_affiliation: {
-                  name: author.name,
-                  email: author.email || null,
-                  affiliation: author.affiliation || null
-                }
-              },
-              create: author
+            connect: processedAuthors.filter(a => a.id).map(a => ({ id: a.id })),
+            create: processedAuthors.filter(a => !a.id).map(a => ({
+              name: a.name,
+              email: a.email,
+              affiliation: a.affiliation
             }))
           }
         },
         include: { authors: true }
       });
     } catch (error) {
+      // Handle unique constraint errors generically
+      if (error.code === "P2002") {
+        error.type = "Validation Error";
+        error.messages = ["Duplicate paper detected"];
+      }
       throw error;
     }
   },

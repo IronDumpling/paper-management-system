@@ -17,18 +17,22 @@ const validatePaperInput = (paper) => {
     errors.push("Published venue is required");
   }
   
-  if (typeof paper.year === 'undefined' || !Number.isInteger(paper.year) || paper.year <= 1900) {
+  if (typeof paper.year === 'undefined') {
+    errors.push("Published year is required");
+  } else if (!Number.isInteger(paper.year) || paper.year <= 1900) {
     errors.push("Valid year after 1900 is required");
   }
   
   if (!Array.isArray(paper.authors) || paper.authors.length === 0) {
     errors.push("At least one author is required");
   } else {
-    paper.authors.forEach((author, index) => {
-      if (!author.name || typeof author.name !== 'string' || author.name.trim() === '') {
-        errors.push(`Author ${index + 1}: Name is required`);
-      }
-    });
+    const hasInvalidAuthor = paper.authors.some(author => 
+      !author.name || typeof author.name !== 'string' || author.name.trim() === ''
+    );
+    
+    if (hasInvalidAuthor) {
+      errors.push("Author name is required");
+    }
   }
   
   return errors;
@@ -178,12 +182,16 @@ const validateResourceId = (req, res, next) => {
 const errorHandler = (err, req, res, next) => {
   console.error(err);
 
-  // TODO ???
   if (err.type === 'Validation Error') {
     return res.status(400).json({
       error: "Validation Error",
-      messages: err.messages
+      messages: err.messages || ["Validation failed"]
     });
+  }
+
+  // Handle Prisma known errors
+  if (err.code === 'P2025') {
+    return res.status(404).json({ error: "Resource not found" });
   }
 
   if (err.type === 'Not Found') {
