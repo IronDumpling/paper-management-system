@@ -4,40 +4,27 @@ const db = require("../database");
 const middleware = require("../middleware");
 
 // GET /api/authors
-router.get(
-  "/",
-  middleware.validateAuthorQueryParams,
-  async (req, res, next) => {
-    try {
-      const { name, affiliation } = req.query;
-      const limit = parseInt(req.query.limit) || 10;
-      const offset = parseInt(req.query.offset) || 0;
-
-      // Build filter conditions
-      const where = {};
-      if (name) where.name = { contains: name, mode: "insensitive" };
-      if (affiliation) where.affiliation = { contains: affiliation, mode: "insensitive" };
-
-      const [authors, total] = await Promise.all([
-        db.getAllAuthors({
-          where,
-          limit,
-          offset,
-        }),
-        db.countAuthors(where),
-      ]);
-
-      res.json({
-        authors,
-        total,
-        limit,
-        offset,
-      });
-    } catch (error) {
-      next(error);
-    }
+router.get("/", middleware.validateAuthorQueryParams, async (req, res, next) => {
+  try {
+    // Destructure the filters from the query
+    const { name, affiliation, limit, offset } = req.query;
+    // Pass filters to db.getAllAuthors so that the database layer can build the 'where' clause
+    const { authors, total } = await db.getAllAuthors({
+      name,
+      affiliation,
+      limit,
+      offset,
+    });
+    res.json({
+      authors,
+      total,
+      limit,
+      offset,
+    });
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 // GET /api/authors/:id
 router.get("/:id", middleware.validateResourceId, async (req, res, next) => {
@@ -98,22 +85,29 @@ router.put("/:id", middleware.validateResourceId, async (req, res, next) => {
 // DELETE /api/authors/:id
 router.delete("/:id", middleware.validateResourceId, async (req, res, next) => {
   try {
+    // Get all papers associated with the author
     const papers = await db.getAuthorPapers(req.resourceId);
+    // Filter papers where the author is the sole author
     const soleAuthorPapers = papers.filter(p => p.authors.length === 1);
-
     if (soleAuthorPapers.length > 0) {
       return res.status(400).json({
         error: "Constraint Error",
         message: "Cannot delete author: they are the only author of one or more papers",
       });
     }
-
-    const deleted = await db.deleteAuthor(req.resourceId);
-    
-    if (!deleted) {
+  
+    // Attempt deletion
+    const result = await db.deleteAuthor(req.resourceId);
+    if (result.error === "NOT_FOUND") {
       return res.status(404).json({ error: "Author not found" });
     }
-
+    if (result.error === "CONSTRAINT") {
+      return res.status(400).json({
+        error: "Constraint Error",
+        message: "Cannot delete author: they are the only author of one or more papers",
+      });
+    }
+  
     res.status(204).end();
   } catch (error) {
     next(error);

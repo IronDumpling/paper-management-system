@@ -265,27 +265,36 @@ const dbOperations = {
       if (!author) {
         return { error: "NOT_FOUND" };
       }
-
+  
       // Check constraint: author is sole author of any papers
       const papers = await prisma.paper.findMany({
         where: { authors: { some: { id } } },
         include: { authors: true },
       });
-
-      const soleAuthorPapers = papers.filter(paper => 
-        paper.authors.length === 1 && 
-        paper.authors.some(a => a.id === id)
+  
+      const soleAuthorPapers = papers.filter(paper =>
+        paper.authors.length === 1 && paper.authors.some(a => a.id === id)
       );
-
+  
       if (soleAuthorPapers.length > 0) {
         return { error: "CONSTRAINT" };
       }
-
-      // Delete author and their relationships
+  
+      // Disconnect the author from all associated papers
+      await prisma.paper.updateMany({
+        where: { authors: { some: { id } } },
+        data: {
+          authors: {
+            disconnect: { id }
+          }
+        }
+      });
+  
+      // Delete the author
       await prisma.author.delete({
         where: { id },
       });
-
+  
       return { success: true };
     } catch (error) {
       if (error.code === 'P2025') {

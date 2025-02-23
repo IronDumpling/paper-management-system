@@ -130,7 +130,16 @@ const validatePaperQueryParams = (req, res, next) => {
 // Validate query parameters for authors
 const validateAuthorQueryParams = (req, res, next) => {
   const errors = [];
-  const { limit, offset } = req.query;
+  const { name, affiliation, limit, offset } = req.query;
+
+  // Validate name filter if provided: must be a non-empty string.
+  if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
+    errors.push("Name filter must be a non-empty string");
+  }
+  // Validate affiliation filter if provided: must be a non-empty string.
+  if (affiliation !== undefined && (typeof affiliation !== 'string' || affiliation.trim() === '')) {
+    errors.push("Affiliation filter must be a non-empty string");
+  }
 
   // Validate limit
   if (limit) {
@@ -163,7 +172,6 @@ const validateAuthorQueryParams = (req, res, next) => {
       details: errors
     });
   }
-
   next();
 };
 
