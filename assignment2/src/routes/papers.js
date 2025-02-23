@@ -58,12 +58,9 @@ router.post("/", async (req, res, next) => {
       });
     }
 
-    console.log('Creating paper with data:', req.body); // Add logging
     const paper = await db.createPaper(req.body);
-    console.log('Created paper:', paper); // Add logging
     res.status(201).json(paper);
   } catch (error) {
-    console.log('Error creating paper:', error); // Add logging
     next(error);
   }
 });

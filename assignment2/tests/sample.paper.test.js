@@ -204,4 +204,87 @@ describe("API Tests for Paper Routes", () => {
       expect(res.body.error).toBe("Paper not found");
     });
   });
+
+  describe("Additional Corner Case Tests", () => {
+    // 1. POST: Title is an empty string
+    it("should return 400 if title is empty", async () => {
+      const paper = { ...samplePaper, title: "" };
+      const res = await request(app).post("/api/papers").send(paper);
+      expect(res.status).toBe(400);
+      expect(res.body.messages).toContain("Title is required");
+    });
+  
+    // 2. POST: publishedIn is a whitespace-only string
+    it("should return 400 if publishedIn is whitespace only", async () => {
+      const paper = { ...samplePaper, publishedIn: "    " };
+      const res = await request(app).post("/api/papers").send(paper);
+      expect(res.status).toBe(400);
+      expect(res.body.messages).toContain("Published venue is required");
+    });
+  
+    // 3. POST: Authors array is empty
+    it("should return 400 if authors array is empty", async () => {
+      const paper = { ...samplePaper, authors: [] };
+      const res = await request(app).post("/api/papers").send(paper);
+      expect(res.status).toBe(400);
+      expect(res.body.messages).toContain("At least one author is required");
+    });
+  
+    // 4. POST: An author is missing a name (empty string)
+    it("should return 400 if an author is missing name", async () => {
+      const paper = { 
+        ...samplePaper, 
+        authors: [{ name: "", email: "john@mail.utoronto.ca", affiliation: "University of Toronto" }]
+      };
+      const res = await request(app).post("/api/papers").send(paper);
+      expect(res.status).toBe(400);
+      // Only one error message for author name is expected regardless of number of authors with empty names
+      expect(res.body.messages).toContain("Author name is required");
+    });
+  
+    // 5. POST: Year provided as a float
+    it("should return 400 if year is a float", async () => {
+      const paper = { ...samplePaper, year: 2024.5 };
+      const res = await request(app).post("/api/papers").send(paper);
+      expect(res.status).toBe(400);
+      expect(res.body.messages).toContain("Valid year after 1900 is required");
+    });
+  
+    // 6. POST: Year provided as a string instead of an integer
+    it("should return 400 if year is provided as a string", async () => {
+      const paper = { ...samplePaper, year: "2024" };
+      const res = await request(app).post("/api/papers").send(paper);
+      expect(res.status).toBe(400);
+      expect(res.body.messages).toContain("Valid year after 1900 is required");
+    });
+  
+    // 7. GET: Year filter provided as a range query (not supported)
+    it("should return 400 if year filter is provided as a range", async () => {
+      const res = await request(app).get("/api/papers?year=2019-2024");
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Invalid query parameter format");
+    });
+  
+    // 8. GET: Limit filter provided as a range query (not supported)
+    it("should return 400 if limit filter is provided as a range", async () => {
+      const res = await request(app).get("/api/papers?limit=10-20");
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Invalid query parameter format");
+    });
+  
+    // 9. GET: Author filter provided as an empty string
+    it("should return 400 if author filter is an empty string", async () => {
+      const res = await request(app).get("/api/papers?author=");
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Invalid query parameter format");
+    });
+  
+    // 10. GET: Paper ID is non-numeric (invalid ID format)
+    it("should return 400 if paper ID is non-numeric", async () => {
+      const res = await request(app).get("/api/papers/abc");
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Invalid ID format");
+    });
+  });
+  
 });

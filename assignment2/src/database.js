@@ -112,13 +112,33 @@ const dbOperations = {
   updatePaper: async (id, paperData) => {
     try {
       return await prisma.$transaction(async (tx) => {
-        // Clear existing authors
+        // Disconnect all existing authors for this paper
         await tx.paper.update({
           where: { id },
           data: { authors: { set: [] } }
         });
-
-        // Reconnect with new/existing authors
+  
+        // Prepare arrays for authors to connect and create
+        const connectArray = [];
+        const createArray = [];
+  
+        // For each author in the update data, check if an exact match exists
+        for (const author of paperData.authors) {
+          const existingAuthor = await tx.author.findFirst({
+            where: {
+              name: author.name,
+              email: author.email || null,
+              affiliation: author.affiliation || null
+            }
+          });
+          if (existingAuthor) {
+            connectArray.push({ id: existingAuthor.id });
+          } else {
+            createArray.push(author);
+          }
+        }
+  
+        // Update the paper with new details and the new authors list
         return tx.paper.update({
           where: { id },
           data: {
@@ -126,23 +146,18 @@ const dbOperations = {
             publishedIn: paperData.publishedIn,
             year: paperData.year,
             authors: {
-              connectOrCreate: paperData.authors.map(author => ({
-                where: {
-                  name_email_affiliation: {
-                    name: author.name,
-                    email: author.email || null,
-                    affiliation: author.affiliation || null
-                  }
-                },
-                create: author
-              }))
+              // Reconnect with authors that already exist
+              connect: connectArray,
+              // Create new authors if no exact match was found
+              create: createArray
             }
           },
           include: { authors: true }
         });
       });
     } catch (error) {
-      if (error.code === 'P2025') return null; // Not found
+      // If the paper is not found, return null
+      if (error.code === 'P2025') return null;
       throw error;
     }
   },

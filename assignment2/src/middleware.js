@@ -56,13 +56,16 @@ const validatePaperQueryParams = (req, res, next) => {
 
   // Validate year
   if (year) {
-    const yearInt = parseInt(year, 10);
-    if (isNaN(yearInt)) {
+    // This regex will only pass if the entire string is digits
+    if (!/^\d+$/.test(year)) {
       errors.push("Year must be a valid integer");
-    } else if (yearInt <= 1900) {
-      errors.push("Year must be greater than 1900");
     } else {
-      req.query.year = yearInt;
+      const yearInt = parseInt(year, 10);
+      if (yearInt <= 1900) {
+        errors.push("Year must be greater than 1900");
+      } else {
+        req.query.year = yearInt;
+      }
     }
   }
 
@@ -73,19 +76,21 @@ const validatePaperQueryParams = (req, res, next) => {
 
   // Validate author(s)
   if (author) {
-    const authors = [].concat(author).filter(a => a !== undefined);
-    if (authors.some(a => typeof a !== 'string' || a.trim() === '')) {
+    const authors = [].concat(author);
+    if (authors.some(a => typeof a !== 'string' || a === "" || a.trim() === "")) {
       errors.push("Invalid author parameter");
     }
   }
 
   // Validate limit
   if (limit) {
-    req.query.limit = parseInt(limit, 10);
-    if (isNaN(req.query.limit)) {
+    if (!/^\d+$/.test(limit)) {
       errors.push("Limit must be a valid integer");
-    } else if (req.query.limit <= 0 || req.query.limit > 100) {
-      errors.push("Limit must be between 1 and 100");
+    } else {
+      req.query.limit = parseInt(limit, 10);
+      if (req.query.limit <= 0 || req.query.limit > 100) {
+        errors.push("Limit must be between 1 and 100");
+      }
     }
   } else {
     req.query.limit = 10;
@@ -93,11 +98,13 @@ const validatePaperQueryParams = (req, res, next) => {
 
   // Validate offset
   if (offset) {
-    req.query.offset = parseInt(offset, 10);
-    if (isNaN(req.query.offset)) {
+    if (!/^\d+$/.test(offset)) {
       errors.push("Offset must be a valid integer");
-    } else if (req.query.offset < 0) {
-      errors.push("Offset cannot be negative");
+    } else {
+      req.query.offset = parseInt(offset, 10);
+      if (req.query.offset < 0) {
+        errors.push("Offset cannot be negative");
+      }
     }
   } else {
     req.query.offset = 0;
