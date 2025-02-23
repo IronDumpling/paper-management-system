@@ -56,7 +56,6 @@ const validatePaperQueryParams = (req, res, next) => {
 
   // Validate year
   if (year) {
-    // This regex will only pass if the entire string is digits
     if (!/^\d+$/.test(year)) {
       errors.push("Year must be a valid integer");
     } else {
@@ -75,10 +74,16 @@ const validatePaperQueryParams = (req, res, next) => {
   }
 
   // Validate author(s)
-  if (author) {
+  if (req.query.hasOwnProperty('author')) {
     const authors = [].concat(author);
-    if (authors.some(a => typeof a !== 'string' || a === "" || a.trim() === "")) {
+    if (authors.some(a => {
+          if (typeof a !== 'string') return true;
+          if (a.trim() === "") return true;
+          return false;
+      })) {
       errors.push("Invalid author parameter");
+    } else {
+      req.query.authors = [].concat(author);
     }
   }
 
@@ -120,6 +125,7 @@ const validatePaperQueryParams = (req, res, next) => {
   
   next();
 };
+
 
 // Validate query parameters for authors
 const validateAuthorQueryParams = (req, res, next) => {

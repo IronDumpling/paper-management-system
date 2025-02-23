@@ -66,14 +66,17 @@ const dbOperations = {
       
       // Author partial matches (AND logic)
       if (filters.authors && filters.authors.length > 0) {
-        where.authors = {
-          every: {
-            name: {
-              contains: filters.authors,
-              mode: 'insensitive'
+        // For each provided author filter, require that at least one author matches
+        where.AND = filters.authors.map(authorFilter => ({
+          authors: {
+            some: {
+              name: {
+                contains: authorFilter,
+                mode: 'insensitive'
+              }
             }
           }
-        };
+        }));
       }
 
       const [papers, total] = await Promise.all([
@@ -81,8 +84,8 @@ const dbOperations = {
           where,
           take: filters.limit,
           skip: filters.offset,
-          include: { authors: true },
-          orderBy: { createdAt: 'desc' }
+          include: { authors: { orderBy: { id: 'asc' } } },
+          orderBy: { id: 'asc' }
         }),
         prisma.paper.count({ where })
       ]);

@@ -5,7 +5,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const samplePaper = {
-  title: "Sample Paper Title",
+  title: "Sample Paper 0",
   publishedIn: "ICSE 2024",
   year: 2024,
   authors: [
@@ -22,10 +22,101 @@ const samplePaper = {
   ],
 };
 
+const paperA = {
+  title: "Advanced Algorithms A",
+  publishedIn: "SIGCOMM 2023",
+  year: 2023,
+  authors: [
+    {
+      name: "Alice Johnson",
+      email: "alice@mit.edu",
+      affiliation: "MIT",
+    },
+    {
+      name: "Bob Brown",
+      email: "bob@stanford.edu",
+      affiliation: "Stanford University",
+    },
+  ],
+};
+
+const paperB = {
+  title: "Distributed Systems B",
+  publishedIn: "IEEE INFOCOM 2024",
+  year: 2024,
+  authors: [
+    {
+      name: "Charlie Davis",
+      email: "charlie@ucsd.edu",
+      affiliation: "UCSD",
+    },
+  ],
+};
+
+const paperC = {
+  title: "Quantum Computing C",
+  publishedIn: "QCon 2025",
+  year: 2025,
+  authors: [
+    {
+      name: "Diana Prince",
+      email: "diana@amazon.com",
+      affiliation: "Amazon",
+    },
+    {
+      name: "Eve Adams",
+      email: "eve@google.com",
+      affiliation: "Google",
+    },
+  ],
+};
+
+const paperD = {
+  title: "Machine Learning D",
+  publishedIn: "NeurIPS 2023",
+  year: 2023,
+  authors: [
+    {
+      name: "Frank Miller",
+      email: "frank@mail.com",
+      affiliation: "Carnegie Mellon",
+    },
+    {
+      name: "Grace Smith",
+      email: "grace@mail.com",
+      affiliation: "Harvard",
+    },
+  ],
+};
+
+const paperE = {
+  title: "Software Engineering E",
+  publishedIn: "ICSE 2024",
+  year: 2024,
+  authors: [
+    {
+      name: "Johnathan Smith",
+      email: "john.smith@example.com",
+      affiliation: "University X",
+    },
+    {
+      name: "Jane Doe",
+      email: "jane.doe@example.com",
+      affiliation: "University Y",
+    },
+  ],
+};
+
 // Clean up before all tests
 beforeAll(async () => {
   await prisma.paper.deleteMany();
   await prisma.author.deleteMany();
+
+  await request(app).post("/api/papers").send(paperA);
+  await request(app).post("/api/papers").send(paperB);
+  await request(app).post("/api/papers").send(paperC);
+  await request(app).post("/api/papers").send(paperD);
+  await request(app).post("/api/papers").send(paperE);
 });
 
 // Clean up after all tests
@@ -258,11 +349,32 @@ describe("API Tests for Paper Routes", () => {
       expect(res.body.messages).toContain("Valid year after 1900 is required");
     });
   
+    it("should return 200 and default to all papers if no filters are provided", async () => {
+      const res = await request(app).get("/api/papers");
+      expect(res.status).toBe(200);
+    });    
+
     // 7. GET: Year filter provided as a range query (not supported)
     it("should return 400 if year filter is provided as a range", async () => {
       const res = await request(app).get("/api/papers?year=2019-2024");
       expect(res.status).toBe(400);
       expect(res.body.message).toBe("Invalid query parameter format");
+    });
+
+    it("should return 400 for a year below 1900", async () => {
+      const res = await request(app).get("/api/papers?year=1899");
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Invalid query parameter format");
+    });
+
+    it("should return 400 for a non-integer year", async () => {
+      const res = await request(app).get("/api/papers?year=2023.5");
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 400 for a non-numeric year", async () => {
+      const res = await request(app).get("/api/papers?year=abc");
+      expect(res.status).toBe(400);
     });
   
     // 8. GET: Limit filter provided as a range query (not supported)
@@ -271,6 +383,26 @@ describe("API Tests for Paper Routes", () => {
       expect(res.status).toBe(400);
       expect(res.body.message).toBe("Invalid query parameter format");
     });
+
+    it("should return 400 if limit is a negative number", async () => {
+      const res = await request(app).get("/api/papers?limit=-1");
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 400 if limit is greater than 100", async () => {
+      const res = await request(app).get("/api/papers?limit=101");
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 400 if limit is a float", async () => {
+      const res = await request(app).get("/api/papers?limit=10.5");
+      expect(res.status).toBe(400);
+    });
+    
+    it("should return 400 if limit is a non-numeric string", async () => {
+      const res = await request(app).get("/api/papers?limit=abc");
+      expect(res.status).toBe(400);
+    });
   
     // 9. GET: Author filter provided as an empty string
     it("should return 400 if author filter is an empty string", async () => {
@@ -278,8 +410,89 @@ describe("API Tests for Paper Routes", () => {
       expect(res.status).toBe(400);
       expect(res.body.message).toBe("Invalid query parameter format");
     });
+
+    it("should return 200 and match papers by a single author", async () => {
+      const res = await request(app).get("/api/papers?author=john");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("papers");
+      expect(res.body).toHaveProperty("total");
+      expect(res.body).toHaveProperty("limit", 10);
+      expect(res.body).toHaveProperty("offset", 0);
+
+      const titles = res.body.papers.map(p => p.title);
+      expect(titles).toEqual(["Advanced Algorithms A", "Software Engineering E", "Sample Paper 0"]);
+    });
+
+    it("should return 200 and treat case-insensitive author queries as matches", async () => {
+      const res = await request(app).get("/api/papers?author=JoHn");
+      expect(res.status).toBe(200);
+      const titles = res.body.papers.map(p => p.title);
+      expect(titles).toEqual(["Advanced Algorithms A", "Software Engineering E", "Sample Paper 0"]);
+    });
+
+    it("should return 200 and match papers by multiple authors using AND logic", async () => {
+      const res = await request(app).get("/api/papers?author=john&author=jane");
+      expect(res.status).toBe(200);
+      const titles = res.body.papers.map(p => p.title);
+      expect(titles).toEqual(["Software Engineering E", "Sample Paper 0"]);
+    });
+    
+    it("should return 200 and match papers by author and year", async () => {
+      const res = await request(app).get("/api/papers?author=smith&year=2023");
+      expect(res.status).toBe(200);
+      const titles = res.body.papers.map(p => p.title);
+      expect(titles).toEqual(["Machine Learning D"]);
+    });
+    
+    it("should return 200 when filtering by multiple authors with different casing", async () => {
+      const res = await request(app).get("/api/papers?author=jaNe&author=DOE");
+      expect(res.status).toBe(200);
+      const titles = res.body.papers.map(p => p.title);
+      expect(titles).toEqual(["Software Engineering E", "Sample Paper 0"]);
+    });
+
+    it("should return 200 if author is a number", async () => {
+      const res = await request(app).get("/api/papers?author=123");
+      expect(res.status).toBe(200);
+    });
+
+    it("should return 200 if author is an object", async () => {
+      const res = await request(app).get("/api/papers?author={name:'john'}");
+      expect(res.status).toBe(200);
+    });
+
+    it("should return 400 if author filter is only spaces", async () => {
+      const res = await request(app).get("/api/papers?author=   ");
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 200 if unknown query parameters are provided", async () => {
+      const res = await request(app).get("/api/papers?randomParam=value");
+      expect(res.status).toBe(200);
+    });
+    
+    it("should return 400 for a mix of valid and invalid parameters", async () => {
+      const res = await request(app).get("/api/papers?author=john&year=invalid");
+      expect(res.status).toBe(400);
+    });  
+    
+    // 10. GET: Offset
+    it("should return 400 if offset is negative", async () => {
+      const res = await request(app).get("/api/papers?offset=-5");
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 400 if offset is a float", async () => {
+      const res = await request(app).get("/api/papers?offset=5.3");
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 400 if offset is a non-numeric string", async () => {
+      const res = await request(app).get("/api/papers?offset=xyz");
+      expect(res.status).toBe(400);
+    });
   
-    // 10. GET: Paper ID is non-numeric (invalid ID format)
+    // 11. GET: Paper ID is non-numeric (invalid ID format)
     it("should return 400 if paper ID is non-numeric", async () => {
       const res = await request(app).get("/api/papers/abc");
       expect(res.status).toBe(400);

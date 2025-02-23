@@ -11,6 +11,8 @@ router.get("/", middleware.validatePaperQueryParams, async (req, res, next) => {
     // Convert author to array if multiple values provided
     const authors = [].concat(author || []).filter(a => a);
     
+    // console.log(req.query);
+
     const filters = {
       year: year ? parseInt(year) : undefined,
       publishedIn,
