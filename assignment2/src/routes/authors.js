@@ -85,29 +85,19 @@ router.put("/:id", middleware.validateResourceId, async (req, res, next) => {
 // DELETE /api/authors/:id
 router.delete("/:id", middleware.validateResourceId, async (req, res, next) => {
   try {
-    // Get all papers associated with the author
-    const papers = await db.getAuthorPapers(req.resourceId);
-    // Filter papers where the author is the sole author
-    const soleAuthorPapers = papers.filter(p => p.authors.length === 1);
-    if (soleAuthorPapers.length > 0) {
-      return res.status(400).json({
-        error: "Constraint Error",
-        message: "Cannot delete author: they are the only author of one or more papers",
-      });
-    }
-  
-    // Attempt deletion
     const result = await db.deleteAuthor(req.resourceId);
+
     if (result.error === "NOT_FOUND") {
       return res.status(404).json({ error: "Author not found" });
     }
+
     if (result.error === "CONSTRAINT") {
       return res.status(400).json({
         error: "Constraint Error",
         message: "Cannot delete author: they are the only author of one or more papers",
       });
     }
-  
+
     res.status(204).end();
   } catch (error) {
     next(error);

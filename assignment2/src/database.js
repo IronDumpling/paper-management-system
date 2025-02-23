@@ -280,16 +280,6 @@ const dbOperations = {
         return { error: "CONSTRAINT" };
       }
   
-      // Disconnect the author from all associated papers
-      await prisma.paper.updateMany({
-        where: { authors: { some: { id } } },
-        data: {
-          authors: {
-            disconnect: { id }
-          }
-        }
-      });
-  
       // Delete the author
       await prisma.author.delete({
         where: { id },
