@@ -25,11 +25,10 @@ const validatePaper = (paper) => {
   }
 
   // Validate year 
-  if (paper.year == undefined) {
+  if (paper.year === undefined || paper.year === null) {
     errors.push("Published year is required");
   } else {
-    const yearInt = parseInt(paper.year, 10);
-    if (isNaN(yearInt) || yearInt <= 1900) {
+    if (!(Number.isInteger(paper.year)) || paper.year <= 1900) {
       errors.push("Valid year after 1900 is required");
     }
   }
@@ -50,18 +49,26 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // Not Found Error (404 Not Found)
-  if (err.type === "Not Found") {
-    return res.status(404).json({
-      error: "Paper not found",
-    });
-  }
-
   // Invalid Query Parameter (400 Bad Request)
   if (err.type === "Invalid Query Parameter") {
     return res.status(400).json({
       error: "Validation Error",
       message: "Invalid query parameter format",
+    });
+  }
+
+  // Handle invalid ID format
+  if (err.type === "Invalid ID Format") {
+    return res.status(400).json({
+      error: "Validation Error",
+      message: err.message 
+    });
+  }
+
+  // Not Found Error (404 Not Found)
+  if (err.type === "Not Found") {
+    return res.status(404).json({
+      error: "Paper not found",
     });
   }
 
@@ -81,14 +88,11 @@ const validateId = (req, res, next) => {
 
   // Check if the ID is a positive integer
   const idInt = parseInt(id, 10);
-  if (isNaN(idInt) || idInt <= 0) {
-    // return res.status(400).json({
-    //   error: "Validation Error",
-    //   message: "Invalid ID format",
-    // });
-    const validationError = new Error("Invalid ID format");
-    validationError.type = "Validation Error";
-    throw validationError;
+  if (!/^\d+$/.test(id) || isNaN(idInt) || idInt <= 0) {
+    const error = new Error("Invalid ID format");
+    error.type = "Invalid ID Format"; 
+    next(error);
+    return;
   }
 
   req.id = idInt;

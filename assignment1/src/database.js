@@ -94,7 +94,7 @@ const dbOperations = {
           if (err) {
             reject(err);
           } else {
-            resolve(rows); // Return the rows matching the filters and pagination
+            resolve(rows); 
           }
         });
       });
@@ -107,7 +107,6 @@ const dbOperations = {
 
   getPaperById: async (id) => {
     // Your implementation here
-    // Hint: Use await with a new Promise that wraps the db.get() operation
     try {
       const result = await new Promise((resolve, reject) => {
         db.get(`SELECT * FROM papers WHERE id = ?`, [id], (err, row) => {
@@ -120,7 +119,9 @@ const dbOperations = {
       });
 
       if (!result) {
-        throw new Error(`Paper not found`);
+        const notFoundError = new Error("Paper not found");
+        notFoundError.type = "Not Found"; 
+        throw notFoundError;
       }
 
       return result;
@@ -144,22 +145,20 @@ const dbOperations = {
             if (err) {
               reject(err);
             } else if (this.changes === 0) {
-              reject(new Error("Paper not found or no changes made."));
+              const notFoundError = new Error("Paper not found");
+              notFoundError.type = "Not Found"; 
+              reject(notFoundError);
             } else {
-              resolve(this.changes); // Return the number of rows updated
+              resolve(this.changes);
             }
           }
         );
       });
 
-      // Fetch the updated paper
       const updatedPaper = await new Promise((resolve, reject) => {
         db.get(
-          `SELECT * FROM papers WHERE id = ?`,
-          [id],
-          (err, row) => {
+          `SELECT * FROM papers WHERE id = ?`, [id], (err, row) => {
             if (err) reject(err);
-            else if (!row) reject(new Error("Paper not found"));
             else resolve(row);
           }
         );
@@ -183,7 +182,7 @@ const dbOperations = {
             } else if (this.changes === 0) {
               reject(new Error(`Paper with ID ${id} not found`));
             } else {
-              resolve(this.changes); // Return the number of rows deleted
+              resolve(this.changes); 
             }
           }
         );
