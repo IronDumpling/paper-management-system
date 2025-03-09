@@ -11,7 +11,7 @@ function Home() {
   // 2. Send POST request to /api/papers with { title, publishedIn, year, authors }
   // 3. If successful:
   //    - Set message to "Paper created successfully"
-  //    - Refresh page to show new paper using location.reload()
+  //    - After a 3-second delay, refresh page to show new paper using location.reload()
   //    Note: Refreshing the page is not the best practice in React applications
   //    because it:
   //    - Goes against React's single-page application philosophy
