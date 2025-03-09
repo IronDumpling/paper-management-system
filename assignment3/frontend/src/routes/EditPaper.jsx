@@ -40,7 +40,7 @@ function EditPaper() {
   // };
   // 2. If successful:
   //    - Set message to "Paper updated successfully"
-  //    - Navigate to home page "/"
+  //    - After a 3-second delay, navigate to home page "/"
   // 3. If fails: Set message to "Error updating paper"
   // Note that authors are displayed but cannot be edited (for simplicity)
   const handleUpdatePaper = async (paperData) => {
