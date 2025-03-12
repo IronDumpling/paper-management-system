@@ -190,6 +190,13 @@ describe("Assignment 3: React Frontend", () => {
   });
 
   test("Delete paper with confirmation", async () => {
+    await page.goto("http://localhost:5173");
+    await page.waitForFunction(
+      () =>
+        document.querySelector("h1")?.textContent === "Paper Management System",
+      { timeout: 5000 }
+    );
+
     // Mock the confirmation dialog to auto-accept
     await page.evaluate(() => {
       window.confirm = () => true; // Automatically confirm deletion
@@ -204,6 +211,10 @@ describe("Assignment 3: React Frontend", () => {
         deleteButton = btn;
         break;
       }
+    }
+    if (!deleteButton) {
+      console.log("No Delete button found. Page state:", await page.content());
+      throw new Error("No Delete button found");
     }
     await deleteButton.click();
 
