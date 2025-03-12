@@ -135,8 +135,21 @@ describe("Assignment 3: React Frontend", () => {
     });
     const { id } = await res.json();
 
-    // Navigate to edit page and verify heading
+    // Navigate to edit page and wait for it to load
     await page.goto(`http://localhost:5173/edit/${id}`);
+    await page.waitForFunction(
+      () =>
+        document.querySelector("h1") ||
+        document.querySelector("div")?.textContent ===
+          "Loading paper details...",
+      { timeout: 5000 }
+    );
+    await page.waitForFunction(
+      () => document.querySelector("h1")?.textContent === "Edit Paper",
+      { timeout: 5000 }
+    );
+
+    // Verify heading
     const heading = await page.$eval("h1", (el) => el.textContent);
     expect(heading).toBe("Edit Paper");
 
