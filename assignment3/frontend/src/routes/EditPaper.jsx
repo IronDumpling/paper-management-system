@@ -89,8 +89,6 @@ function EditPaper() {
       <h1>Edit Paper</h1>
       <PaperForm paper={paper} onSubmit={handleUpdatePaper} />
       {message && <div>{message}</div>}
-      {/* Added */}
-      <button onClick={() => navigate("/")}>Cancel</button>
     </div>
   );
 }
