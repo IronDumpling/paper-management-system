@@ -6,6 +6,10 @@ import styles from "../styles/Home.module.css";
 
 function Home() {
   const [message, setMessage] = useState(null);
+  const [papers, setPapers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   // TODO: Implement paper creation
   // 1. Fetch all authors (GET /api/authors) and filter them using paperData.authorIds to create the authors array
   // 2. Send POST request to /api/papers with { title, publishedIn, year, authors }
@@ -21,8 +25,36 @@ function Home() {
   //    but for simplicity in this assignment, we'll use page refresh.
   // 4. If request fails:
   //    - Set message to "Error creating paper"
+
+  useEffect(() => {
+    fetch("/api/papers")
+      .then((res) => {
+        if (!res.ok) throw new Error("Error loading papers");
+        return res.json();
+      })
+      .then((data) => {
+        setPapers(data.papers || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Error loading papers");
+        setLoading(false);
+      });
+  }, []);
+
   const handleCreatePaper = async (paperData) => {
-    // Implementation here
+    try {
+      const res = await fetch("/api/papers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paperData),
+      });
+      if (!res.ok) throw new Error();
+      setMessage("Paper created successfully");
+      setTimeout(() => window.location.reload(), 3000);
+    } catch {
+      setMessage("Error creating paper");
+    }
   };
 
   return (
@@ -35,7 +67,16 @@ function Home() {
       <PaperForm onSubmit={handleCreatePaper} />
 
       <h2 className={styles.sectionTitle}>Papers</h2>
-      <PaperList />
+      {/* <PaperList /> */}
+      {
+        loading ? (
+          <div>Loading papers...</div>
+        ) : error ? (
+          <div>{error}</div>
+        ) : (
+          <PaperList papers={papers} />
+        )
+      }
     </div>
   );
 }
