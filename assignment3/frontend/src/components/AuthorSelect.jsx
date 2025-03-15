@@ -13,6 +13,20 @@ function AuthorSelect({ selectedAuthorIds, onChange }) {
   // 3. If fails (e.g., network error or server error): Set error to "Error loading authors", clear loading
   useEffect(() => {
     // Implementation here
+    const fetchAuthors = async () => {
+      try {
+        const response = await fetch("/api/authors");
+        if (!response.ok) {
+          throw new Error("Failed to fetch authors");
+        }
+        const data = await response.json();
+        setAuthors(data);
+      } catch (err) {
+        setError("Error loading authors");
+      } finally {
+        setLoading(false);
+      }
+    };
   }, []);
 
   // TODO: Handle selection changes and call the onChange prop
@@ -22,7 +36,9 @@ function AuthorSelect({ selectedAuthorIds, onChange }) {
   // - Use Number() to convert string values to numbers (API expects numeric IDs)
   // - Pass the array to onChange
   const handleChange = (event) => {
-    // Implementation here
+    const selectedOptions = Array.from(event.target.selectedOptions);
+    const selectedIds = selectedOptions.map((option) => Number(option.value));
+    onChange(selectedIds);
   };
 
   return (
