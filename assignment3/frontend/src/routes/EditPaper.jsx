@@ -23,7 +23,25 @@ function EditPaper() {
   //    - Clear loading
   //    - Return to prevent unnecessary res.json()
   useEffect(() => {
-    // Implementation here
+    fetch(`/api/papers/${id}`)
+      .then((res) => {
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error("Error loading paper");
+        return res.json();
+      })
+      .then((data) => {
+        if (!data) {
+          setPaper(null);
+          setLoading(false);
+          return;
+        }
+        setPaper(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Error loading paper");
+        setLoading(false);
+      });
   }, [id]);
 
   // TODO: Implement function to handle paper updates
@@ -40,11 +58,26 @@ function EditPaper() {
   // };
   // 2. If successful:
   //    - Set message to "Paper updated successfully"
-  //    - Navigate to home page "/"
+  //    - After a 3-second delay, navigate to home page "/"
   // 3. If fails: Set message to "Error updating paper"
   // Note that authors are displayed but cannot be edited (for simplicity)
   const handleUpdatePaper = async (paperData) => {
-    // Implementation here
+    try {
+      const updatedPaper = {
+        ...paperData,
+        authors: paper.authors,
+      };
+      const res = await fetch(`/api/papers/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedPaper),
+      });
+      if (!res.ok) throw new Error();
+      setMessage("Paper updated successfully");
+      setTimeout(() => navigate("/"), 3000);
+    } catch {
+      setMessage("Error updating paper");
+    }
   };
 
   if (loading) return <div>Loading paper details...</div>;

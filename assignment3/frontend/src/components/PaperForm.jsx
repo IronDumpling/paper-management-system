@@ -29,6 +29,29 @@ function PaperForm({ paper, onSubmit }) {
     // Note: Display only the first error encountered and stop checking further
 
     // TODO: Call onSubmit(formData) if validation passes
+    if (!formData.title) {
+      setError("Title is required");
+      return;
+    }
+    if (!formData.publishedIn) {
+      setError("Publication venue is required");
+      return;
+    }
+    if (!formData.year) {
+      setError("Publication year is required");
+      return;
+    }
+    if (formData.year < 1900) {
+      setError("Valid year after 1900 is required");
+      return;
+    }
+    if (formData.authorIds.length === 0) {
+      setError("Please select at least one author");
+      return;
+    }
+
+    setError(null);
+    onSubmit(formData);
   };
 
   const handleChange = (e) => {

@@ -16,7 +16,22 @@ function PaperList() {
   // 2. If successful: Set papers data and clear loading
   // 3. If fails (e.g., network error or server error): Set error to "Error loading papers", clear loading
   useEffect(() => {
-    // Implementation here
+    const fetchPapers = async () => {
+      try {
+        const response = await fetch("/api/papers");
+        if (!response.ok) {
+          throw new Error("Error loading papers");
+        }
+        const data = await response.json();
+        setPapers(data);
+      } catch (err) {
+        setError("Error loading papers");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPapers();
   }, []);
 
   const handleDelete = async (paperId, paperTitle) => {
@@ -32,6 +47,22 @@ function PaperList() {
     //    - Set message to "Error deleting paper"
     // 4. If user clicks "Cancel":
     //    - Do nothing (dialog will close automatically)
+    if (!confirm(`Are you sure you want to delete "${paperTitle}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/papers/${paperId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Error deleting paper");
+      }
+      setPapers(papers.filter((paper) => paper.id !== paperId));
+      setMessage("Paper deleted successfully");
+    } catch (err) {
+      setMessage("Error deleting paper");
+    }
   };
 
   if (loading) return <div>Loading papers...</div>;
