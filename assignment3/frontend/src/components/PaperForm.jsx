@@ -38,6 +38,8 @@ function PaperForm({ paper, onSubmit }) {
       // Convert year value to number since backend expects a number
       // and we need to do numerical comparison for validation
       // Other fields can remain as strings
+      // Note: Clearing the year input sets value to "" -> Number("") = 0,
+      //       which should trigger "Publication year is required"
       [name]: name === "year" ? Number(value) : value,
     }));
   };
