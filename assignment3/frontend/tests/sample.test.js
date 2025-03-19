@@ -68,6 +68,10 @@ describe("Assignment 3: React Frontend", () => {
 
   test("Create paper form validates empty title", async () => {
     await page.type('input[name="publishedIn"]', "IEEE");
+    // Clear the year input before typing
+    await page.evaluate(
+      () => (document.querySelector('input[name="year"]').value = "")
+    );
     await page.type('input[name="year"]', "2024");
     await page.click('button[type="submit"]');
 
@@ -94,6 +98,10 @@ describe("Assignment 3: React Frontend", () => {
     // Fill out and submit the form
     await page.type('input[name="title"]', "Test Paper");
     await page.type('input[name="publishedIn"]', "IEEE");
+    // Clear the year input before typing
+    await page.evaluate(
+      () => (document.querySelector('input[name="year"]').value = "")
+    );
     await page.type('input[name="year"]', "2023");
     await page.select("select", String(id));
     await page.click('button[type="submit"]');
