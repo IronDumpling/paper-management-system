@@ -23,7 +23,7 @@ function PaperList() {
           throw new Error("Error loading papers");
         }
         const data = await response.json();
-        setPapers(data);
+        setPapers(data.papers || []);
       } catch (err) {
         setError("Error loading papers");
       } finally {
@@ -60,6 +60,7 @@ function PaperList() {
       }
       setPapers(papers.filter((paper) => paper.id !== paperId));
       setMessage("Paper deleted successfully");
+      setTimeout(() => window.location.reload(), 3000);
     } catch (err) {
       setMessage("Error deleting paper");
     }
@@ -67,7 +68,7 @@ function PaperList() {
 
   if (loading) return <div>Loading papers...</div>;
   if (error) return <div>Error loading papers</div>;
-  if (papers.length === 0) return <div>No papers found</div>;
+  if (!papers || papers.length === 0) return <div>No papers found</div>;
 
   return (
     <div className={styles.container}>

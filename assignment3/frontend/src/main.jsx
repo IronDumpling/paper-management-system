@@ -13,14 +13,26 @@ import "./styles/global.css";
 //    - Home route ("/") should render the Home component
 //    - Edit route ("/edit/:id") should render the EditPaper component
 //    Note: ":id" is a URL parameter that will be used to identify which paper to edit
+import Home from "./routes/Home";
+import EditPaper from "./routes/EditPaper";
 
 // TODO: Define your router configuration here
 // Example route configuration:
 // const router = createBrowserRouter([]);
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Home />,
+  },
+  {
+    path: "/edit/:id",
+    element: <EditPaper />,
+  },
+]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     {/* TODO: Replace null with your Router instance */}
-    <RouterProvider router={null} />
+    <RouterProvider router={router} />
   </React.StrictMode>
 );

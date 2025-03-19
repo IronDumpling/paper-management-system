@@ -1,5 +1,5 @@
 // This component serves as the home page, displaying the paper list and create form
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PaperList from "../components/PaperList";
 import PaperForm from "../components/PaperForm";
 import styles from "../styles/Home.module.css";
@@ -67,14 +67,13 @@ function Home() {
       <PaperForm onSubmit={handleCreatePaper} />
 
       <h2 className={styles.sectionTitle}>Papers</h2>
-      {/* <PaperList /> */}
       {
         loading ? (
           <div>Loading papers...</div>
         ) : error ? (
           <div>{error}</div>
         ) : (
-          <PaperList papers={papers} />
+          <PaperList papers={papers} loading={loading} error={error} />
         )
       }
     </div>
