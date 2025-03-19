@@ -73,7 +73,7 @@ function Home() {
         ) : error ? (
           <div>{error}</div>
         ) : (
-          <PaperList papers={papers} loading={loading} error={error} />
+          <PaperList papers={papers}/>
         )
       }
     </div>

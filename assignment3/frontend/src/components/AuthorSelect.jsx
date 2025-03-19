@@ -20,13 +20,15 @@ function AuthorSelect({ selectedAuthorIds, onChange }) {
           throw new Error("Failed to fetch authors");
         }
         const data = await response.json();
-        setAuthors(data);
+        setAuthors(data.authors || data || []);
       } catch (err) {
         setError("Error loading authors");
       } finally {
         setLoading(false);
       }
     };
+
+    fetchAuthors();
   }, []);
 
   // TODO: Handle selection changes and call the onChange prop
@@ -43,14 +45,15 @@ function AuthorSelect({ selectedAuthorIds, onChange }) {
 
   return (
     <div>
-      {error && <div className="error">Error loading authors</div>}
+      {loading && <div>Loading authors...</div>}
+      {error && <div className="error">{error}</div>}
       <select
         multiple
         value={selectedAuthorIds}
         onChange={handleChange}
         disabled={loading || error}
       >
-        {authors.length === 0 ? (
+        {!loading && !error && authors.length === 0 ? (
           <option disabled>No authors available</option>
         ) : (
           authors.map((author) => (

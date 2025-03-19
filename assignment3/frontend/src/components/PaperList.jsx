@@ -23,7 +23,8 @@ function PaperList() {
           throw new Error("Error loading papers");
         }
         const data = await response.json();
-        setPapers(data.papers || []);
+        const papersArray = data.papers || data || [];
+        setPapers(papersArray);
       } catch (err) {
         setError("Error loading papers");
       } finally {
@@ -68,7 +69,7 @@ function PaperList() {
 
   if (loading) return <div>Loading papers...</div>;
   if (error) return <div>Error loading papers</div>;
-  if (!papers || papers.length === 0) return <div>No papers found</div>;
+  if (!loading && papers.length === 0) return <div>No papers found</div>;
 
   return (
     <div className={styles.container}>
