@@ -44,14 +44,40 @@ function Home() {
 
   const handleCreatePaper = async (paperData) => {
     try {
+      // 1. Fetch all authors to get their details
+      const authorsRes = await fetch("/api/authors");
+      if (!authorsRes.ok) throw new Error("Error fetching authors");
+      const authorsData = await authorsRes.json();
+      
+      // 2. Filter and map selected authors to the required format
+      const selectedAuthors = (authorsData.authors || authorsData || [])
+        .filter(author => paperData.authorIds.includes(author.id))
+        .map(author => ({
+          name: author.name,
+          email: author.email || null,
+          affiliation: author.affiliation || null
+        }));
+
+      // 3. Submit paper with complete author data
       const res = await fetch("/api/papers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(paperData),
+        body: JSON.stringify({
+          title: paperData.title,
+          publishedIn: paperData.publishedIn,
+          year: paperData.year,
+          authors: selectedAuthors
+        }),
       });
-      if (!res.ok) throw new Error();
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to create paper");
+      }
+      
       setMessage("Paper created successfully");
-      setTimeout(() => window.location.reload(), 3000);
+      const newPaper = await res.json();
+      setPapers(prev => [...prev, newPaper]);
     } catch {
       setMessage("Error creating paper");
     }
