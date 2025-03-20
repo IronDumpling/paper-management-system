@@ -38,8 +38,8 @@ function EditPaper() {
         setPaper(data);
         setLoading(false);
       })
-      .catch(() => {
-        setError("Error loading paper");
+      .catch((err) => {
+        setError(err.message || "Error loading paper");
         setLoading(false);
       });
   }, [id]);
@@ -63,20 +63,44 @@ function EditPaper() {
   // Note that authors are displayed but cannot be edited (for simplicity)
   const handleUpdatePaper = async (paperData) => {
     try {
-      const updatedPaper = {
-        ...paperData,
-        authors: paper.authors,
-      };
+      // 1. Fetch current authors list
+      const authorsRes = await fetch("/api/authors");
+      if (!authorsRes.ok) throw new Error("Error fetching authors");
+      const authorsData = await authorsRes.json();
+      
+      // 2. Map selected IDs to full author objects
+      const selectedAuthors = (authorsData.authors || authorsData || [])
+        .filter(author => paperData.authorIds.includes(author.id))
+        .map(author => ({
+          name: author.name,
+          email: author.email || null,
+          affiliation: author.affiliation || null
+        }));
+
+      // 3. Submit paper with updated authors
       const res = await fetch(`/api/papers/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPaper),
+        body: JSON.stringify({
+          title: paperData.title,
+          publishedIn: paperData.publishedIn,
+          year: paperData.year,
+          authors: selectedAuthors
+        }),
       });
-      if (!res.ok) throw new Error();
+
+      const data = await res.json();
+      if (!res.ok) {
+        const errorMsg = data.error === "Validation Error" 
+          ? data.messages?.join(", ") || data.message
+          : "Error updating paper";
+        throw new Error(errorMsg);
+      }
+
       setMessage("Paper updated successfully");
       setTimeout(() => navigate("/"), 3000);
-    } catch {
-      setMessage("Error updating paper");
+    } catch (err) {
+      setMessage(err.message || "Error updating paper");
     }
   };
 

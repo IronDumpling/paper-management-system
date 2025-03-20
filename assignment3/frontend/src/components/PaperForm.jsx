@@ -45,6 +45,7 @@ function PaperForm({ paper, onSubmit }) {
       setError("Valid year after 1900 is required");
       return;
     }
+
     if (formData.authorIds.length === 0) {
       setError("Please select at least one author");
       return;
@@ -108,7 +109,8 @@ function PaperForm({ paper, onSubmit }) {
         <label>Authors:</label>
         <AuthorSelect
           selectedAuthorIds={formData.authorIds}
-          onChange={(authorIds) =>
+          onChange={
+            (authorIds) =>
             setFormData((prev) => ({ ...prev, authorIds }))
           }
         />
