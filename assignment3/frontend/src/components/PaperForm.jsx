@@ -37,7 +37,7 @@ function PaperForm({ paper, onSubmit }) {
       setError("Publication venue is required");
       return;
     }
-    if (!formData.year) {
+    if (!formData.year || formData.year === 0) {
       setError("Publication year is required");
       return;
     }
@@ -45,7 +45,6 @@ function PaperForm({ paper, onSubmit }) {
       setError("Valid year after 1900 is required");
       return;
     }
-
     if (formData.authorIds.length === 0) {
       setError("Please select at least one author");
       return;

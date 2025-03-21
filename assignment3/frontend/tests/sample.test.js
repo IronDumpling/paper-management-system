@@ -234,3 +234,66 @@ describe("Assignment 3: React Frontend", () => {
     expect(success).toBe("Paper deleted successfully");
   });
 });
+
+describe("Extra Frontend Edge Case Tests", () => {
+  let browser, page;
+  beforeAll(async () => {
+    browser = await puppeteer.launch({ headless: true });
+    page = await browser.newPage();
+    await page.goto("http://localhost:5173");
+  });
+  afterAll(async () => {
+    await browser.close();
+  });
+
+  test("Create paper form shows only first error when title and publishedIn are empty", async () => {
+    // Clear title field if any
+    await page.evaluate(() => {
+      document.querySelector('input[name="title"]').value = "";
+      document.querySelector('input[name="publishedIn"]').value = "";
+      document.querySelector('input[name="year"]').value = "2024"; // valid year
+    });
+    await page.click('button[type="submit"]');
+    // Expect only "Title is required" error (first error encountered)
+    const error = await page.$eval(".error", (el) => el.textContent);
+    expect(error).toBe("Title is required");
+  });
+
+  test("Create paper form validates empty publication venue", async () => {
+    // Fill in valid title and year, but leave publishedIn empty
+    await page.evaluate(() => {
+      document.querySelector('input[name="title"]').value = "";
+    });
+    await page.type('input[name="title"]', "Edge Case Paper");
+    await page.evaluate(() => (document.querySelector('input[name="publishedIn"]').value = ""));
+    await page.evaluate(() => (document.querySelector('input[name="year"]').value = "2024"));
+    await page.click('button[type="submit"]');
+    const error = await page.$eval(".error", (el) => el.textContent);
+    expect(error).toBe("Publication venue is required");
+  });
+
+  test("Create paper form validates empty publication year", async () => {
+    // Fill valid title and publishedIn, but clear year
+    await page.evaluate(() => (document.querySelector('input[name="title"]').value = ""));
+    await page.type('input[name="title"]', "Edge Case Paper");
+    await page.evaluate(() => (document.querySelector('input[name="publishedIn"]').value = ""));
+    await page.type('input[name="publishedIn"]', "IEEE");
+    await page.evaluate(() => (document.querySelector('input[name="year"]').value = ""));
+    await page.click('button[type="submit"]');
+    const error = await page.$eval(".error", (el) => el.textContent);
+    expect(error).toBe("Publication year is required");
+  });
+
+  // test("Create paper form validates invalid year (<1900)", async () => {
+  //   // Fill valid title and publishedIn, but set year to 1890
+  //   await page.evaluate(() => {\n  document.querySelector('input[name=\"title\"]').value = \"\";\n});
+  //   await page.type('input[name="title"]', "Edge Case Paper");
+  //   await page.evaluate(() => (document.querySelector('input[name="publishedIn"]').value = ""));
+  //   await page.type('input[name="publishedIn"]', "IEEE");
+  //   await page.evaluate(() => (document.querySelector('input[name="year"]').value = ""));
+  //   await page.type('input[name="year"]', "1890");
+  //   await page.click('button[type="submit"]');
+  //   const error = await page.$eval(".error", (el) => el.textContent);
+  //   expect(error).toBe("Valid year after 1900 is required");
+  // });
+});
