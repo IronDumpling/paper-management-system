@@ -14,9 +14,12 @@ async function getPapers(): Promise<{
   }
 }
 
-export default async function Home() {
+async function PapersSection() {
   const { papers, error } = await getPapers();
+  // TODO: Render papers or an error message based on getPapers() result
+}
 
+export default async function Home() {
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold">Paper Management System</h1>
@@ -30,10 +33,8 @@ export default async function Home() {
       </nav>
       <section>
         <h2 className="text-2xl font-semibold mb-4">Papers</h2>
-        {/* TODO:
-           - Wrap PaperList in Suspense with a fallback of "Loading papers..."
-           - Display error message if error exists, otherwise render PaperList
-        */}
+        {/* TODO: Implement Suspense to handle loading states
+         */}
       </section>
     </div>
   );
