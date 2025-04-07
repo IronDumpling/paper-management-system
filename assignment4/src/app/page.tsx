@@ -13,8 +13,8 @@ async function getPapers(): Promise<{
       cache: "no-store",
     });
     if (!res.ok) throw new Error();
-    const data = await res.json();
-    return { papers: data.papers || [], error: null };
+    const papers = await res.json();
+    return { papers: papers || [], error: null };
   } catch {
     return { papers: [], error: "Error loading papers" };
   }
@@ -47,7 +47,7 @@ export default async function Home() {
       </nav>
       <section>
         <h2 className="text-2xl font-semibold mb-4">Papers</h2>
-        <Suspense fallback={<p>Loading papers...</p>}>+-
+        <Suspense fallback={<p>Loading papers...</p>}>
           <PapersSection />
         </Suspense>
       </section>
