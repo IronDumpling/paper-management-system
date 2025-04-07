@@ -16,18 +16,36 @@ export function PaperForm({ action, authors }: PaperFormProps) {
           Title
         </label>
         {/* TODO: Add a text input for the title, styled with Tailwind */}
+        <input
+          type="text"
+          name="title"
+          id="title"
+          className="border p-2 w-full"
+        />
       </div>
       <div>
         <label htmlFor="publishedIn" className="block text-sm font-medium">
           Published In
         </label>
         {/* TODO: Add a text input for the publication venue, styled with Tailwind */}
+        <input
+          type="text"
+          name="publishedIn"
+          id="publishedIn"
+          className="border p-2 w-full"
+        />
       </div>
       <div>
         <label htmlFor="year" className="block text-sm font-medium">
           Year
         </label>
         {/* TODO: Add a number input for the publication year, styled with Tailwind */}
+        <input
+          type="number"
+          name="year"
+          id="year"
+          className="border p-2 w-full"
+        />
       </div>
       <div>
         <label htmlFor="authorIds" className="block text-sm font-medium">
@@ -41,6 +59,23 @@ export function PaperForm({ action, authors }: PaperFormProps) {
               // Render author options here
             )}
         */}
+        <select
+          multiple
+          name="authorIds"
+          id="authorIds"
+          className="border p-2 w-full"
+          data-testid="author-dropdown"
+        >
+          {authors.length === 0 ? (
+            <option disabled>No authors available</option>
+          ) : (
+            authors.map((author) => (
+              <option key={author.id} value={author.id}>
+                {author.name}
+              </option>
+            ))
+          )}
+        </select>
       </div>
       <Button data-testid="create-paper-btn" type="submit">
         Create Paper

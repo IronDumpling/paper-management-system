@@ -9,6 +9,12 @@ async function getPapers(): Promise<{
 }> {
   try {
     // TODO: Fetch papers from /api/papers endpoint
+    const res = await fetch("http://localhost:3000/api/papers", {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    return { papers: data.papers || [], error: null };
   } catch {
     return { papers: [], error: "Error loading papers" };
   }
@@ -17,6 +23,14 @@ async function getPapers(): Promise<{
 async function PapersSection() {
   const { papers, error } = await getPapers();
   // TODO: Render papers or an error message based on getPapers() result
+  if (error) {
+    return (
+      <p data-testid="papers-error" className="text-sm">
+        {error}
+      </p>
+    );
+  }
+  return <PaperList papers={papers} />;
 }
 
 export default async function Home() {
@@ -33,8 +47,9 @@ export default async function Home() {
       </nav>
       <section>
         <h2 className="text-2xl font-semibold mb-4">Papers</h2>
-        {/* TODO: Implement Suspense to handle loading states
-         */}
+        <Suspense fallback={<p>Loading papers...</p>}>+-
+          <PapersSection />
+        </Suspense>
       </section>
     </div>
   );

@@ -20,14 +20,24 @@ export default function CreatePaperForm({ authors }: CreatePaperFormProps) {
       try {
         // TODO: Call createPaper Server Action
         // TODO: Set success message and redirect to "/" after 3 seconds
+        await createPaper(formData);
+        setMessage("Paper created successfully");
+        setTimeout(() => router.push("/"), 3000);
       } catch (error) {
-        // TODO: Set error message
+        const errorMessage =
+        error instanceof Error ? error.message : "Error creating paper";
+        setMessage(errorMessage);
       }
     });
   };
 
   return (
     <>
+      {isPending && (
+        <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center">
+          <p className="text-sm text-gray-600">Submitting paper...</p>
+        </div>
+      )}
       <PaperForm action={handleAction} authors={authors} />
       {message && (
         <p data-testid="status-message" className="text-sm">

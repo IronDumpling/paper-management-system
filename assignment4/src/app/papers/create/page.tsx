@@ -4,6 +4,7 @@ import CreatePaperForm from "@/components/CreatePaperForm";
 
 async function getAuthors(): Promise<Author[]> {
   // TODO: Fetch authors from Prisma, sorted by id ascending
+  return await prisma.author.findMany({ orderBy: { id: "asc" } });
 }
 
 export default async function CreatePaper() {
