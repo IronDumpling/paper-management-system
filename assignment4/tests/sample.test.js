@@ -234,4 +234,108 @@ describe("Assignment 4: Full-Stack Next.js Application", () => {
       }
     }
   });
+
+  test("Create paper fails if year is missing", async () => {
+    await page.goto("http://localhost:3000/papers/create");
+    await page.type('input[name="title"]', "Year Missing Test");
+    await page.type('input[name="publishedIn"]', "IEEE");
+    await page.evaluate(() => {
+      document.querySelector('input[name="year"]').value = "";
+    });
+    await page.click('[data-testid="create-paper-btn"]');
+    const error = await waitForMessage(page, "Publication year is required");
+    expect(error).toBe("Publication year is required");
+  });
+
+  test("Create paper fails if year is invalid (<1901)", async () => {
+    await page.goto("http://localhost:3000/papers/create");
+    await page.type('input[name="title"]', "Invalid Year Test");
+    await page.type('input[name="publishedIn"]', "IEEE");
+    await page.type('input[name="year"]', "1800");
+    await page.click('[data-testid="create-paper-btn"]');
+    const error = await waitForMessage(page, "Valid year after 1900 is required");
+    expect(error).toBe("Valid year after 1900 is required");
+  });
+
+  test("Create paper fails if publication venue is missing", async () => {
+    await page.goto("http://localhost:3000/papers/create");
+    await page.type('input[name="title"]', "Missing Venue Test");
+    await page.type('input[name="year"]', "2023");
+    await page.click('[data-testid="create-paper-btn"]');
+    const error = await waitForMessage(page, "Publication venue is required");
+    expect(error).toBe("Publication venue is required");
+  });
+
+  test("Create paper fails if no authors selected", async () => {
+    await page.goto("http://localhost:3000/papers/create");
+    await page.type('input[name="title"]', "Missing Authors Test");
+    await page.type('input[name="publishedIn"]', "ACM");
+    await page.type('input[name="year"]', "2024");
+    // Don't select any authors
+    await page.click('[data-testid="create-paper-btn"]');
+    const error = await waitForMessage(page, "Please select at least one author");
+    expect(error).toBe("Please select at least one author");
+  });
+
+  test("Create author fails if name is missing", async () => {
+    await page.goto("http://localhost:3000/authors/create");
+    await page.evaluate(() => {
+      document.querySelector('input[name="name"]').value = "";
+    });
+    await page.click('[data-testid="create-author-btn"]');
+    const error = await waitForMessage(page, "Name is required");
+    expect(error).toBe("Name is required");
+  });
+
+  test("Create and display 10 authors and 10 papers", async () => {
+    const authors = [];
+  
+    // Create 10 authors in the database directly via Prisma
+    for (let i = 1; i <= 10; i++) {
+      const author = await prisma.author.create({
+        data: {
+          name: `Author ${i}`,
+          email: `author${i}@example.com`,
+          affiliation: `University ${i}`,
+        },
+      });
+      authors.push(author);
+    }
+  
+    // Create 10 papers with alternating author combinations
+    for (let i = 1; i <= 10; i++) {
+      const paperAuthors = i % 2 === 0
+        ? [authors[i - 1]]
+        : [authors[i - 1], authors[(i - 1 + 1) % 10]];
+  
+      await prisma.paper.create({
+        data: {
+          title: `Paper ${i}`,
+          publishedIn: i % 2 === 0 ? "IEEE" : "ACM",
+          year: 2020 + i,
+          authors: {
+            connect: paperAuthors.map((a) => ({ id: a.id })),
+          },
+        },
+      });
+    }
+  
+    // Go to home page to view the paper list
+    await page.goto("http://localhost:3000");
+  
+    // Wait until papers are rendered
+    await page.waitForFunction(() => {
+      const items = document.querySelectorAll("[data-testid='paper-list'] li");
+      return items.length >= 10;
+    }, { timeout: 6000 });
+  
+    const paperTitles = await page.$$eval("h3.text-xl.font-semibold", (els) =>
+      els.map((el) => el.textContent.trim())
+    );
+  
+    for (let i = 1; i <= 10; i++) {
+      expect(paperTitles).toContain(`Paper ${i}`);
+    }
+  });
+  
 });
